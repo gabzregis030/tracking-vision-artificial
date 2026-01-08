@@ -314,6 +314,23 @@ def save_uploaded_file(uploaded_file):
         st.error(f"Error al guardar archivo: {e}")
         return None
 
+def get_video_files():
+    """Get list of video files from videos/ directory."""
+    video_dir = Path("videos")
+    if not video_dir.exists():
+        return []
+    return [f for f in video_dir.glob("*") if f.suffix.lower() in ['.mp4', '.avi', '.mov']]
+
+def format_title(filename):
+    """Format filename to nice title."""
+    name = filename.stem
+    # Replace separators
+    name = name.replace("_", " ").replace("-", " ")
+    # Special cases (Manual dictionary could go here)
+    if "2 gatos" in name.lower(): return "Dos Gatos Jugando"
+    if "3 gatos" in name.lower(): return "Tres Gatos"
+    
+    return name.title()
 
 def main():
     st.title("Sistema de Rastreo de Gatos")
@@ -322,11 +339,34 @@ def main():
     # Sidebar
     st.sidebar.title("Configuración")
     
-    uploaded_file = st.sidebar.file_uploader(
-        "Seleccionar archivo de video", 
-        type=['mp4', 'avi', 'mov', 'mpeg4'],
-        help="Formatos soportados: MP4, AVI, MOV"
+    # Video Selection Logic
+    available_videos = get_video_files()
+    video_options = ["Cargar mi propio video"] + [format_title(f) for f in available_videos]
+    
+    selected_option = st.sidebar.selectbox(
+        "Seleccionar Video",
+        options=video_options,
+        index=3 if len(video_options) > 3 else 0 # Default to a nice sample if available
     )
+    
+    video_path = None
+    
+    if selected_option == "Cargar mi propio video":
+        uploaded_file = st.sidebar.file_uploader(
+            "Arrastra tu archivo aquí", 
+            type=['mp4', 'avi', 'mov', 'mpeg4'],
+            help="Formatos soportados: MP4, AVI, MOV"
+        )
+        if uploaded_file:
+            video_path = save_uploaded_file(uploaded_file)
+    else:
+        # Find which file corresponds to the title
+        # This is a simple look up (assuming unique titles)
+        for vid_file in available_videos:
+            if format_title(vid_file) == selected_option:
+                video_path = str(vid_file)
+                st.sidebar.info(f"Video seleccionado: {selected_option}")
+                break
 
     st.sidebar.markdown("### Configuración de Detección")
     
@@ -363,9 +403,12 @@ def main():
     metrics_placeholder = st.empty()
     progress_bar = st.empty()
     
-    if start_btn and uploaded_file:
-        video_path = save_uploaded_file(uploaded_file)
-        if video_path:
+    progress_bar = st.empty()
+    
+    if start_btn:
+        if not video_path:
+            st.warning("⚠️  Por favor selecciona o carga un video primero.")
+        else:
             # Use our new SmartTracker
             tracker = SmartTracker(video_path, model_type)
             if tracker.initialize():
