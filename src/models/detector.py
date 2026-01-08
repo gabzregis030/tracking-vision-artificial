@@ -14,8 +14,8 @@ class ObjectDetector:
     Primary support for YOLO, with fallback to classical methods.
     """
     
-    def __init__(self, method: str = "yolo", confidence_threshold: float = 0.5,
-                 nms_threshold: float = 0.4):
+    def __init__(self, method: str = "yolo", confidence_threshold: float = 0.25,
+                 nms_threshold: float = 0.3):
         """
         Initialize object detector.
         
@@ -42,12 +42,15 @@ class ObjectDetector:
         """Load YOLO model weights and configuration."""
         # Note: Users need to download YOLO weights separately
         # This is a placeholder that checks for local weights
-        weights_path = "models/yolo/yolov3.weights"
-        config_path = "models/yolo/yolov3.cfg"
-        names_path = "models/yolo/coco.names"
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        weights_path = os.path.join(base_path, "yolo", "yolov3-tiny.weights")
+        config_path = os.path.join(base_path, "yolo", "yolov3-tiny.cfg")
+        names_path = os.path.join(base_path, "yolo", "coco.names")
         
         if os.path.exists(weights_path) and os.path.exists(config_path):
             self.net = cv2.dnn.readNet(weights_path, config_path)
+            self.net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
+            self.net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
             
             # Get output layer names
             layer_names = self.net.getLayerNames()
