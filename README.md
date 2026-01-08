@@ -1,8 +1,8 @@
-# Vision Tracking Project 🎯
+# Vision Tracking Project 
 
 Real-time object tracking project using OpenCV and Python. Implements multiple tracking algorithms to compare performance and accuracy across different scenarios.
 
-## 📋 Features
+## Features
 
 - **Multiple tracking algorithms**: CSRT, KCF, MOSSE, MedianFlow
 - **Single and multi-object tracking**: Track one or multiple objects simultaneously
@@ -10,7 +10,7 @@ Real-time object tracking project using OpenCV and Python. Implements multiple t
 - **Comparative analysis**: Performance and accuracy metrics
 - **Intuitive interface**: Visual object selection for tracking
 
-## 🚀 Installation
+## Installation
 
 ### Requirements
 
@@ -30,7 +30,7 @@ cd vision-tracking-project
 pip install -r requirements.txt
 ```
 
-## 💻 Usage
+## Usage
 
 ### Single object tracking
 
@@ -56,7 +56,7 @@ python src/main.py --camera 0 --tracker MOSSE
 python src/main.py --video videos/sample.mp4 --tracker CSRT --kalman
 ```
 
-## 📊 Available Algorithms
+## Available Algorithms
 
 | Algorithm | Speed | Accuracy | Recommended Use |
 |-----------|-------|----------|----------------|
@@ -65,7 +65,7 @@ python src/main.py --video videos/sample.mp4 --tracker CSRT --kalman
 | **MOSSE** | Very Fast | Medium | Real-time, limited resources |
 | **MedianFlow** | Fast | Medium | Predictable movements |
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 vision-tracking-project/
@@ -86,7 +86,7 @@ vision-tracking-project/
 └── docs/                   # Documentation
 ```
 
-## 📖 Examples
+## Examples
 
 Check the `examples/` folder for detailed examples:
 
@@ -94,14 +94,14 @@ Check the `examples/` folder for detailed examples:
 - `multi_object.py`: Multi-object tracking
 - `webcam_tracking.py`: Real-time webcam tracking
 
-## 🧪 Testing
+## Testing
 
 Run tests:
 ```bash
 python -m pytest tests/
 ```
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome. Please:
 
@@ -115,16 +115,14 @@ Contributions are welcome. Please:
 
 This project is under the MIT License. See `LICENSE` file for more details.
 
-## 🔗 References
+##  References
 
 - [OpenCV Tracking API](https://docs.opencv.org/4.x/d9/df8/group__tracking.html)
 - [CSRT Paper](https://arxiv.org/abs/1611.08461)
 - [KCF Paper](https://arxiv.org/abs/1404.7584)
 
-## 👨‍💻 Author
+##  Author
 
 Developed as part of Computer Vision project
 
 ---
-
-⭐ If you found this project useful, consider giving it a star on GitHub!
