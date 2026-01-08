@@ -346,8 +346,7 @@ def main():
             
             # Update stats in sidebar
             stats_frame.metric("Frame Actual", f"{metrics.get('frame', 0)}/{metrics.get('total_frames', 0)}")
-            stats_vehicles.metric("Vehiculos Detectados", metrics.get('object_count', 0))
-            
+            stats_vehicles.metric("Gatos Detectados", metrics.get('object_count', 0))            
             # Progress bar
             if metrics.get('total_frames', 0) > 0:
                 progress = metrics.get('frame', 0) / metrics.get('total_frames', 1)
