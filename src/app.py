@@ -73,9 +73,9 @@ class SmartTracker:
         # Initialize YOLO Detector
         # We try to use the tiny model we configured
         try:
-            # Lower confidence for better detection of difficult objects
-            self.detector = ObjectDetector(method="yolo", confidence_threshold=0.2)
-            print("YOLO Detector initialized")
+            # Lower confidence to 0.15 and increase NMS to 0.5 to allow overlapping cats
+            self.detector = ObjectDetector(method="yolo", confidence_threshold=0.15, nms_threshold=0.5)
+            print("YOLO Detector initialized with high sensitivity")
         except Exception as e:
             st.error(f"Error cargando detector: {e}")
             return False
