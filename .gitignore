@@ -45,10 +45,10 @@ results/metrics/*.csv
 results/metrics/*.json
 
 # Large video files (keep small samples)
-videos/*.mp4
-videos/*.avi
-videos/*.mov
-!videos/sample_video.mp4
+# videos/*.mp4
+# videos/*.avi
+# videos/*.mov
+# !videos/sample_video.mp4
 
 # Pre-trained models
 *.pth
