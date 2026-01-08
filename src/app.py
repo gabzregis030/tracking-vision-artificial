@@ -60,6 +60,27 @@ class SmartTracker:
         self.frame_count = 0
         self.detected_objects = []
         self.is_tracking = False
+
+    def calculate_iou(self, boxA, boxB):
+        # determine the (x, y)-coordinates of the intersection rectangle
+        xA = max(boxA[0], boxB[0])
+        yA = max(boxA[1], boxB[1])
+        xB = min(boxA[0] + boxA[2], boxB[0] + boxB[2])
+        yB = min(boxA[1] + boxA[3], boxB[1] + boxB[3])
+
+        # compute the area of intersection rectangle
+        interArea = max(0, xB - xA) * max(0, yB - yA)
+
+        # compute the area of both the prediction and ground-truth rectangles
+        boxAArea = boxA[2] * boxA[3]
+        boxBArea = boxB[2] * boxB[3]
+
+        # compute the intersection over union by taking the intersection
+        # area and dividing it by the sum of prediction + ground-truth
+        # areas - the interesection area
+        iou = interArea / float(boxAArea + boxBArea - interArea)
+
+        return iou
         
     def initialize(self):
         """Initialize video and models."""
@@ -103,22 +124,40 @@ class SmartTracker:
         active_count = self.tracker.count_active() if self.tracker else 0
         
         # Detection logic
-        # Run detection periodically (every 15 frames) or if we aren't tracking anything
-        if self.frame_count % 15 == 0 or active_count == 0:
+        # Run periodically (every 10 frames) OR if zero cats tracked
+        if self.frame_count % 10 == 0 or active_count == 0:
             detections = self.detector.detect(frame, target_classes=["cat"])
             
-            # If we found objects
             if len(detections) > 0:
-                # If we aren't tracking anything, OR we found MORE objects than we are tracking
-                # we re-initialize to catch the new ones.
-                if active_count == 0 or len(detections) > active_count:
-                    print(f"Detectados {len(detections)} gatos (Actualizando trackers)")
-                    rois = [(x, y, w, h) for x, y, w, h, _, _ in detections]
-                    self.tracker.init_multi(frame, rois)
+                print(f"Detectados {len(detections)} gatos en frame {self.frame_count}")
+                
+                # Get current trackers to compare
+                current_bboxes = self.tracker.get_active_bboxes()
+                
+                new_objects_to_add = []
+                for det in detections:
+                    x, y, w, h, _, _ = det
+                    det_box = (x, y, w, h)
                     
-                    # Add to speed calculator
-                    for _ in rois:
+                    # Check overlap with ANY existing active tracker
+                    is_new = True
+                    for curr_box in current_bboxes:
+                        iou = self.calculate_iou(det_box, curr_box)
+                        if iou > 0.3: # If overlaps > 30%, assume it's the same cat
+                            is_new = False
+                            break
+                    
+                    if is_new:
+                        new_objects_to_add.append(det_box)
+                
+                # Add ONLY the genuinely new objects
+                if len(new_objects_to_add) > 0:
+                    print(f"Agregando {len(new_objects_to_add)} nuevos gatos")
+                    for box in new_objects_to_add:
+                        # Initialize new tracker for this box
+                        self.tracker.init(frame, box)
                         self.speed_calculator.add_object()
+                    self.is_tracking = True
         
         # Update Tracking
         success_list, bboxes = self.tracker.update(frame)
