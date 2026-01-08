@@ -337,6 +337,7 @@ def main():
         help="Actívalo si no detecta gatos (ej. cuando hay personas o poca luz). Usa un modelo más potente pero más lento."
     )
     
+    
     model_type = "standard" if use_enhance else "tiny"
 
     st.sidebar.markdown("---")
