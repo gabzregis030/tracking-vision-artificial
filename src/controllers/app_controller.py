@@ -131,21 +131,78 @@ class AppController:
             print("Error: Detector not initialized")
             return False
         
-        # Read first frame
-        success, frame = self.video_processor.read()
-        if not success:
-            print("Error: Could not read first frame")
-            return False
-        
-        # Detect objects
         print("Detecting objects...")
-        detections = self.detector.detect(frame, target_classes)
+        detections = []
+        frame = None
         
+        # Step 1: Try YOLO detection on multiple frames
+        max_yolo_attempts = 10
+        for attempt in range(max_yolo_attempts):
+            success, frame = self.video_processor.read()
+            if not success:
+                print("Error reading video frame")
+                return False
+                
+            detections = self.detector.detect(frame, target_classes)
+            if len(detections) > 0:
+                print(f"YOLO detected {len(detections)} object(s) on frame {attempt + 1}")
+                break
+        
+        # Step 2: If YOLO failed, try motion detection as fallback
+        if len(detections) == 0:
+            print("YOLO detection failed. Trying motion detection fallback...")
+            
+            # Create background subtractor
+            back_sub = cv2.createBackgroundSubtractorMOG2(
+                history=100, 
+                varThreshold=25, 
+                detectShadows=False
+            )
+            
+            # Read several frames to build background model
+            frames_for_bg = []
+            for _ in range(30):
+                ret, tmp_frame = self.video_processor.read()
+                if not ret:
+                    break
+                back_sub.apply(tmp_frame)
+                frames_for_bg.append(tmp_frame)
+            
+            if len(frames_for_bg) > 0:
+                # Use the last frame for detection
+                frame = frames_for_bg[-1]
+                fg_mask = back_sub.apply(frame)
+                
+                # Clean up the mask
+                kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+                fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_CLOSE, kernel)
+                fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_OPEN, kernel)
+                
+                # Find contours
+                contours, _ = cv2.findContours(fg_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                
+                # Filter contours by size
+                min_area = 500  # Minimum area for a vehicle
+                for cnt in contours:
+                    area = cv2.contourArea(cnt)
+                    if area > min_area:
+                        x, y, w, h = cv2.boundingRect(cnt)
+                        # Filter by aspect ratio (vehicles are usually wider than tall)
+                        aspect_ratio = w / h if h > 0 else 0
+                        if 0.5 < aspect_ratio < 4.0:  # Reasonable aspect ratio for vehicles
+                            detections.append((x, y, w, h, "vehicle", 0.8))
+                
+                # Sort by area and take top 5
+                detections = sorted(detections, key=lambda d: d[2]*d[3], reverse=True)[:5]
+                
+                if len(detections) > 0:
+                    print(f"Motion detection found {len(detections)} object(s)")
+
         if len(detections) == 0:
             print("No objects detected")
             return False
-        
-        print(f"Detected {len(detections)} object(s)")
+            
+        print(f"Initializing tracking for {len(detections)} object(s)")
         
         # Extract bounding boxes
         rois = [(x, y, w, h) for x, y, w, h, _, _ in detections]
@@ -274,7 +331,7 @@ class AppController:
                 
             # Speed
             speed = self.speed_calculator.update(i, (center_x, center_y))
-            object_speeds[f"Object {i}"] = self.speed_calculator.get_smoothed_speed(i)
+            object_speeds[f"Object {i}"] = self.speed_calculator.get_speed_kmh(i)
 
         # Draw info (calculate pseudo-FPS or pass 0)
         self._draw_tracking_info(frame, bboxes, success_list, fps=0.0)
@@ -292,7 +349,7 @@ class AppController:
     def _draw_tracking_info(self, frame: np.ndarray, bboxes: List[Tuple[int, int, int, int]],
                            success_list: List[bool], fps: float):
         """
-        Draw tracking information on frame.
+        Draw tracking information on frame with speed in km/h.
         
         Args:
             frame: Frame to draw on
@@ -300,29 +357,49 @@ class AppController:
             success_list: List of tracking success status
             fps: Current FPS
         """
-        colors = self.tracker.get_active_colors()
-        color_idx = 0
+        # Use bright green color for all tracked objects
+        bright_green = (0, 255, 0)
         
         for i, (bbox, success) in enumerate(zip(bboxes, success_list)):
             if not success:
                 continue
             
-            color = colors[color_idx] if color_idx < len(colors) else (0, 255, 0)
-            color_idx += 1
+            x, y, w, h = bbox
             
-            # Get speed info
-            speed = self.speed_calculator.get_smoothed_speed(i)
-            vx, vy = self.speed_calculator.get_velocity(i)
+            # Draw bounding box with bright green
+            cv2.rectangle(frame, (x, y), (x + w, y + h), bright_green, 2)
             
-            # Create label
-            label = f"ID:{i} Speed:{speed:.1f}px/s"
+            # Get speed in km/h
+            speed_kmh = self.speed_calculator.get_speed_kmh(i)
             
-            # Draw bounding box
-            self.video_processor.draw_box(frame, bbox, label, color)
+            # Create speed label
+            speed_label = f"{speed_kmh:.1f} km/h"
+            
+            # Calculate text size for background
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            font_scale = 0.6
+            thickness = 2
+            (text_w, text_h), baseline = cv2.getTextSize(speed_label, font, font_scale, thickness)
+            
+            # Position label at top-left of bounding box
+            label_x = x
+            label_y = y - 10 if y > 30 else y + h + 20
+            
+            # Draw semi-transparent background for text
+            overlay = frame.copy()
+            cv2.rectangle(overlay, 
+                         (label_x - 2, label_y - text_h - 5),
+                         (label_x + text_w + 4, label_y + 5),
+                         (0, 0, 0), -1)
+            cv2.addWeighted(overlay, 0.6, frame, 0.4, 0, frame)
+            
+            # Draw speed text
+            cv2.putText(frame, speed_label, (label_x, label_y),
+                       font, font_scale, bright_green, thickness)
         
-        # Draw general info
+        # Draw general info at top
         info_text = f"Tracker: {self.tracker_type} | FPS: {fps:.1f} | Objects: {self.tracker.count_active()}"
-        self.video_processor.draw_info(frame, info_text)
+        cv2.putText(frame, info_text, (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
     
     def cleanup(self):
         """Clean up resources."""
