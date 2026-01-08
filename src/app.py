@@ -21,8 +21,7 @@ if project_root not in sys.path:
 from src.models import ObjectDetector, ObjectTracker, SpeedCalculator
 
 st.set_page_config(
-    page_title="Sistema de Tracking de Gatos",
-    page_icon="🐈",
+    page_title="Sistema de Rastreo",
     layout="wide"
 )
 
@@ -36,7 +35,12 @@ st.markdown("""
     }
     .main-header {
         text-align: center;
-        color: #10b981;
+        color: #2c3e50;
+        font-family: 'Helvetica', sans-serif;
+    }
+    .stButton>button {
+        background-color: #2c3e50;
+        color: white;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -216,20 +220,20 @@ def save_uploaded_file(uploaded_file):
 
 
 def main():
-    st.title("🐈 Sistema de Tracking de Gatos (AI Powered)")
-    st.markdown("Sube un video para detectar y rastrear gatos usando **YOLO Artificial Intelligence**.")
+    st.title("Sistema de Rastreo y Velocidad")
+    st.markdown("Proyecto final: Detección y seguimiento de objetos en movimiento.")
     
     # Sidebar
-    st.sidebar.title("⚙️ Configuración")
+    st.sidebar.title("Configuración")
     
     uploaded_file = st.sidebar.file_uploader(
-        "📹 Cargar Video", 
+        "Seleccionar archivo de video", 
         type=['mp4', 'avi', 'mov', 'mpeg4'],
-        help="Sube un video de gatos"
+        help="Formatos soportados: MP4, AVI, MOV"
     )
     
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 📊 Estadísticas")
+    st.sidebar.markdown("### Métricas en tiempo real")
     
     # Placeholders
     stats_frame = st.sidebar.empty()
@@ -243,8 +247,8 @@ def main():
         
     # Controls
     col1, col2 = st.sidebar.columns(2)
-    start_btn = col1.button("▶️ Iniciar", type="primary", use_container_width=True)
-    stop_btn = col2.button("⏹️ Detener", use_container_width=True)
+    start_btn = col1.button("Iniciar Análisis", type="primary", use_container_width=True)
+    stop_btn = col2.button("Detener", use_container_width=True)
     
     # Main display
     video_placeholder = st.empty()
@@ -259,9 +263,9 @@ def main():
             if tracker.initialize():
                 st.session_state.tracker = tracker
                 st.session_state.is_running = True
-                st.success("✅ IA Iniciada. Detectando gatos...")
+                st.success("Sistema iniciado correctamente.")
             else:
-                st.error("❌ Error al iniciar el motor de IA")
+                st.error("Error al inicializar el sistema de seguimiento.")
                 
     if stop_btn:
         st.session_state.is_running = False
@@ -277,14 +281,14 @@ def main():
             frame, metrics = tracker.process_frame()
             
             if frame is None:
-                st.info("🎬 Video terminado")
+                st.info("Fin del video.")
                 st.session_state.is_running = False
                 break
                 
             # Update UI
             video_placeholder.image(frame, channels="RGB", use_container_width=True)
-            stats_frame.metric("Frame", f"{metrics.get('frame', 0)}/{metrics.get('total_frames', 0)}")
-            stats_cats.metric("Gatos Detectados", metrics.get('object_count', 0))
+            stats_frame.metric("Frame Procesado", f"{metrics.get('frame', 0)}/{metrics.get('total_frames', 0)}")
+            stats_cats.metric("Objetos en escena", metrics.get('object_count', 0))
             
             if metrics.get('total_frames', 0) > 0:
                 progress_bar.progress(metrics.get('frame', 0) / metrics.get('total_frames', 1))
