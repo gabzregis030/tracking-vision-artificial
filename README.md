@@ -1,128 +1,114 @@
-# Vision Tracking Project 
+# 👁️ Vision Tracking Project
 
-Real-time object tracking project using OpenCV and Python. Implements multiple tracking algorithms to compare performance and accuracy across different scenarios.
+A powerful computer vision application for real-time object tracking using OpenCV and Python. It supports multiple tracking algorithms and now features a modern **Web Interface** for easy usage.
 
-## Features
+## ✨ Features
 
-- **Multiple tracking algorithms**: CSRT, KCF, MOSSE, MedianFlow
-- **Single and multi-object tracking**: Track one or multiple objects simultaneously
-- **Real-time processing**: Compatible with webcam and video files
-- **Comparative analysis**: Performance and accuracy metrics
-- **Intuitive interface**: Visual object selection for tracking
+- **🆕 Web Interface**: Modern, easy-to-use dashboard built with Streamlit.
+- **Multiple Tracking Algorithms**: CSRT, KCF, MOSSE, MedianFlow, MIL, Boosting.
+- **Auto-Detection**: Integrated YOLO object detection to automatically find objects to track.
+- **Multi-Object Tracking**: Track multiple objects simultaneously with independent speed calculations.
+- **Kalman Filtering**: Advanced motion smoothing and prediction for robust tracking.
+- **Real-time Metrics**: Speed estimation (px/s) and trajectory monitoring.
 
-## Installation
+## 🚀 Quick Start (Web Interface)
 
-### Requirements
+The easiest way to use the project is via the new Web Dashboard.
 
-- Python 3.8 or higher
-- pip (Python package manager)
+### 1. Installation
+First, ensure you have Python 3.8+ installed. We recommend using `uv` for fast dependency management, but `pip` works too.
 
-### Steps
-
-1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/vision-tracking-project.git
-cd vision-tracking-project
-```
+# Clone the repository
+git clone https://github.com/gabzregis030/tracking-vision-artificial.git
+cd tracking-vision-artificial
 
-2. Install dependencies:
-```bash
+# Install dependencies
 pip install -r requirements.txt
+# OR if using uv:
+uv pip install -r requirements.txt
 ```
 
-## Usage
-
-### Single object tracking
+### 2. Launch the Web App
+Run the following command to start the interface:
 
 ```bash
-python src/main.py --video videos/sample.mp4 --tracker CSRT
+# Using standard pip/python
+streamlit run src/app.py
+
+# Using uv (recommended)
+uv run streamlit run src/app.py
 ```
 
-### Multi-object tracking
+This will automatically open your browser at `http://localhost:8501`.
 
+### 3. How to Use
+1.  **Input Source**: Choose between "Video File" (upload your own) or "Webcam".
+2.  **Configuration**:
+    *   **Tracker**: `KCF` is recommended for speed/accuracy balance. `CSRT` for high accuracy (slower).
+    *   **Auto-Detection**: Enabled by default (uses YOLO to find people/cars/etc automatically).
+3.  **Start**: Click **Start Tracking**.
+
+---
+
+## 💻 CLI Usage (Advanced)
+
+If you prefer the command line or need maximum performance without the web overhead, use the Python script directly.
+
+### Basic Commands
+
+**Track objects in a video file:**
 ```bash
-python src/main.py --video videos/sample.mp4 --multi --num-objects 3 --tracker KCF
+uv run src/main.py --video videos/demo_two_objects.mp4 --tracker KCF
 ```
 
-### Real-time webcam tracking
-
+**Track using Webcam:**
 ```bash
-python src/main.py --camera 0 --tracker MOSSE
+uv run src/main.py --camera 0 --tracker KCF
 ```
 
-### Algorithm comparison
-
+**Multi-object Tracking (2 objects):**
 ```bash
-python src/main.py --video videos/sample.mp4 --tracker CSRT --kalman
+uv run src/main.py --video videos/demo_two_objects.mp4 --multi --num-objects 2
+```
+*Note: You will be asked to draw a rectangle around each object and press ENTER.*
+
+**Enable Kalman Filter (Smoother movement):**
+```bash
+uv run src/main.py --video videos/demo_two_objects.mp4 --kalman
 ```
 
-## Available Algorithms
+## 📊 Available Algorithms
 
 | Algorithm | Speed | Accuracy | Recommended Use |
 |-----------|-------|----------|----------------|
-| **CSRT** | Slow | High | Objects with scale changes |
-| **KCF** | Medium | Medium-High | General use, good balance |
-| **MOSSE** | Very Fast | Medium | Real-time, limited resources |
-| **MedianFlow** | Fast | Medium | Predictable movements |
+| **KCF** | ⭐⭐⭐⭐ | ⭐⭐⭐ | **Best General Choice**. Good balance. |
+| **CSRT** | ⭐⭐ | ⭐⭐⭐⭐⭐ | High precision, handles occlusion well. Slow. |
+| **MOSSE** | ⭐⭐⭐⭐⭐ | ⭐⭐ | Extremely fast. Good for old hardware. |
+| **MedianFlow** | ⭐⭐⭐⭐ | ⭐⭐ | Good if motion is predictable and small. |
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 vision-tracking-project/
-├── src/                    # Source code
-│   ├── models/             # Tracking implementations
-│   │   ├── detector.py     # Object detection (YOLO, HOG)
-│   │   ├── tracker.py      # Tracking algorithms
-│   │   ├── kalman_filter.py # Kalman filtering
-│   │   ├── speed_calculator.py # Speed estimation
-│   │   └── video_processor.py # Video I/O
-│   ├── controllers/        # Application controllers
-│   ├── utils/              # Utilities
-│   └── main.py             # Main entry point
-├── examples/               # Usage examples
-├── notebooks/              # Jupyter notebooks
-├── videos/                 # Test videos
-├── results/                # Generated results
-└── docs/                   # Documentation
+├── src/
+│   ├── app.py              # Web Interface Entry Point
+│   ├── main.py             # CLI Entry Point
+│   ├── controllers/        # Logic controllers
+│   └── models/             # Core algorithms (Tracker, Kalman, etc)
+├── videos/                 # Place your test videos here
+├── requirements.txt        # Project dependencies
+└── README.md              # Documentation
 ```
 
-## Examples
+## 🛠️ Testing
 
-Check the `examples/` folder for detailed examples:
+Run the test suite to ensure everything is working:
 
-- `single_object.py`: Basic single object tracking
-- `multi_object.py`: Multi-object tracking
-- `webcam_tracking.py`: Real-time webcam tracking
-
-## Testing
-
-Run tests:
 ```bash
-python -m pytest tests/
+uv run pytest tests/
 ```
-
-## Contributing
-
-Contributions are welcome. Please:
-
-1. Fork the project
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
 
 ## 📝 License
 
-This project is under the MIT License. See `LICENSE` file for more details.
-
-##  References
-
-- [OpenCV Tracking API](https://docs.opencv.org/4.x/d9/df8/group__tracking.html)
-- [CSRT Paper](https://arxiv.org/abs/1611.08461)
-- [KCF Paper](https://arxiv.org/abs/1404.7584)
-
-##  Author
-
-Developed as part of Computer Vision project
-
----
+MIT License. See `LICENSE` for details.
