@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# Results and outputs
+results/tracked_videos/*.mp4
+results/tracked_videos/*.avi
+results/metrics/*.csv
+results/metrics/*.json
+
+# Large video files (keep small samples)
+videos/*.mp4
+videos/*.avi
+videos/*.mov
+!videos/sample_video.mp4
+
+# Pre-trained models
+*.pth
+*.pt
+*.h5
+*.onnx
+*.weights
+
+# Temporary files
+*.log
+*.tmp
+temp/
+.cache/
+
+# Environment variables
+.env
+.env.local
