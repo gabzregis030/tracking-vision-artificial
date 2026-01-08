@@ -110,7 +110,36 @@ class SmartTracker:
         self.total_frames = 0
         self.frame_count = 0
         self.detected_objects = []
+        self.object_breeds = {} # Store breed for each object ID
         self.is_tracking = False
+
+    def detect_breed(self, frame, bbox):
+        """
+        Analyze texture to determine if cat is Sphynx (Hairless) or Normal using Laplacian Variance.
+        Returns: 'Sphynx' or 'Gato'
+        """
+        x, y, w, h = [int(v) for v in bbox]
+        
+        # Ensure bounds
+        y_start = max(0, y)
+        y_end = min(frame.shape[0], y+h)
+        x_start = max(0, x)
+        x_end = min(frame.shape[1], x+w)
+        
+        roi = frame[y_start:y_end, x_start:x_end]
+        if roi.size == 0:
+            return "Gato"
+            
+        try:
+            gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+            variance = cv2.Laplacian(gray, cv2.CV_64F).var()
+            
+            # Threshold: < 5000 is likely smooth/wrinkled (Sphynx), > 5000 is textured (Fur)
+            # Wrinkled skin can have high variance (e.g. 2500+), so we need a higher bar for "Fur".
+            is_hairless = variance < 5000 
+            return "Gato Pelón" if is_hairless else "Gato"
+        except Exception:
+            return "Gato"
 
     def calculate_iou(self, boxA, boxB):
         # determine the (x, y)-coordinates of the intersection rectangle
@@ -216,7 +245,12 @@ class SmartTracker:
                     for box in new_objects_to_add:
                         # Initialize new tracker for this box
                         self.tracker.init(frame, box)
-                        self.speed_calculator.add_object()
+                        obj_id = self.speed_calculator.add_object() # Returns ID (index)
+                        
+                        # Detect breed ONCE when first finding the cat
+                        breed = self.detect_breed(frame, box)
+                        self.object_breeds[obj_id] = breed
+                        
                     self.is_tracking = True
         
         # Update Tracking
@@ -238,13 +272,16 @@ class SmartTracker:
                 # Update speed
                 speed = self.speed_calculator.update(i, center)
                 speed_kmh = self.speed_calculator.get_speed_kmh(i)
-                object_speeds[f"Gato {i+1}"] = speed_kmh
+                
+                # Get Breed (Default to Gato if missing)
+                breed = self.object_breeds.get(i, "Gato")
+                object_speeds[f"{breed} {i+1}"] = speed_kmh
                 
                 # Draw Box - Stylish corners instead of full box? Let's keep box for clarity but nicer color
                 cv2.rectangle(frame, (x, y), (x + w, y + h), color_primary, 2)
                 
                 # Draw Label with background
-                label = f"Gato {i+1}: {speed_kmh:.1f} km/h"
+                label = f"{breed} {i+1}: {speed_kmh:.1f} km/h"
                 (w_text, h_text), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
                 cv2.rectangle(frame, (x, y-25), (x + w_text + 10, y), color_primary, -1)
                 cv2.putText(frame, label, (x+5, y-8), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
