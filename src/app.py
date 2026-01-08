@@ -21,26 +21,72 @@ if project_root not in sys.path:
 from src.models import ObjectDetector, ObjectTracker, SpeedCalculator
 
 st.set_page_config(
-    page_title="Sistema de Rastreo",
+    page_title="Rastreo de Gatos",
     layout="wide"
 )
 
-# Custom CSS
+# Modern UI Styling
 st.markdown("""
 <style>
-    .stMetric {
-        background-color: #1f2937;
-        padding: 10px;
-        border-radius: 10px;
+    /* Main container styling */
+    .main {
+        background-color: #f8f9fa;
     }
-    .main-header {
-        text-align: center;
+    
+    /* Elegant Title */
+    h1 {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         color: #2c3e50;
-        font-family: 'Helvetica', sans-serif;
+        font-weight: 700;
+        text-align: center;
+        padding-bottom: 20px;
+        background: linear-gradient(120deg, #6c5ce7, #a55eea);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
+    
+    /* Metrics Cards */
+    .stMetric {
+        background: white;
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-left: 5px solid #a55eea;
+    }
+    .stMetric label {
+        color: #636e72 !important;
+        font-size: 0.9rem !important;
+    }
+    .stMetric div {
+        color: #2d3436 !important;
+        font-weight: 700 !important;
+    }
+    
+    /* Sidebar styling */
+    .css-1d391kg {
+        background-color: #dfe6e9;
+    }
+    
+    /* Buttons */
     .stButton>button {
-        background-color: #2c3e50;
+        background: linear-gradient(90deg, #6c5ce7, #a55eea);
         color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(108, 92, 231, 0.4);
+    }
+    
+    /* Header style */
+    .header-text {
+        font-size: 1.2rem;
+        color: #636e72;
+        text-align: center;
+        margin-bottom: 30px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -170,7 +216,8 @@ class SmartTracker:
         # Visualization & Metrics
         object_speeds = {}
         
-        bright_green = (0, 255, 0)
+        # Vibrant colors for visualization
+        color_primary = (234, 94, 165) # Pink/Purple
         
         for i, (bbox, success) in enumerate(zip(bboxes, success_list)):
             if success:
@@ -183,12 +230,14 @@ class SmartTracker:
                 speed_kmh = self.speed_calculator.get_speed_kmh(i)
                 object_speeds[f"Gato {i+1}"] = speed_kmh
                 
-                # Draw Box
-                cv2.rectangle(frame, (x, y), (x + w, y + h), bright_green, 2)
+                # Draw Box - Stylish corners instead of full box? Let's keep box for clarity but nicer color
+                cv2.rectangle(frame, (x, y), (x + w, y + h), color_primary, 2)
                 
-                # Draw Label
-                label = f"Gato {i+1} : {speed_kmh:.1f} km/h"
-                cv2.putText(frame, label, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, bright_green, 2)
+                # Draw Label with background
+                label = f"Gato {i+1}: {speed_kmh:.1f} km/h"
+                (w_text, h_text), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
+                cv2.rectangle(frame, (x, y-25), (x + w_text + 10, y), color_primary, -1)
+                cv2.putText(frame, label, (x+5, y-8), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
         
         # Convert for Streamlit
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -220,8 +269,8 @@ def save_uploaded_file(uploaded_file):
 
 
 def main():
-    st.title("Sistema de Rastreo y Velocidad")
-    st.markdown("Proyecto final: Detección y seguimiento de objetos en movimiento.")
+    st.title("Sistema de Rastreo de Gatos")
+    st.markdown("<p class='header-text'>Análisis inteligente de movimiento y velocidad</p>", unsafe_allow_html=True)
     
     # Sidebar
     st.sidebar.title("Configuración")
