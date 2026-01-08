@@ -73,7 +73,8 @@ class SmartTracker:
         # Initialize YOLO Detector
         # We try to use the tiny model we configured
         try:
-            self.detector = ObjectDetector(method="yolo", confidence_threshold=0.3)
+            # Lower confidence for better detection of difficult objects
+            self.detector = ObjectDetector(method="yolo", confidence_threshold=0.2)
             print("YOLO Detector initialized")
         except Exception as e:
             st.error(f"Error cargando detector: {e}")
@@ -98,25 +99,26 @@ class SmartTracker:
         
         self.frame_count += 1
         
+        # Get currently active trackers
+        active_count = self.tracker.count_active() if self.tracker else 0
+        
         # Detection logic
-        # Run detection periodically or if we aren't tracking anything
-        if self.frame_count % 30 == 0 or not self.is_tracking:
+        # Run detection periodically (every 15 frames) or if we aren't tracking anything
+        if self.frame_count % 15 == 0 or active_count == 0:
             detections = self.detector.detect(frame, target_classes=["cat"])
             
-            # If we found objects and aren't tracking, or found MORE objects
+            # If we found objects
             if len(detections) > 0:
-                # Basic logic: Re-initialize tracking if we find relevant objects
-                # In a full app we might match existing ones, here we simple reset for robustness in demo
-                if not self.is_tracking:
-                    print(f"Detectados {len(detections)} gatos")
+                # If we aren't tracking anything, OR we found MORE objects than we are tracking
+                # we re-initialize to catch the new ones.
+                if active_count == 0 or len(detections) > active_count:
+                    print(f"Detectados {len(detections)} gatos (Actualizando trackers)")
                     rois = [(x, y, w, h) for x, y, w, h, _, _ in detections]
-                    success_list = self.tracker.init_multi(frame, rois)
+                    self.tracker.init_multi(frame, rois)
                     
                     # Add to speed calculator
                     for _ in rois:
                         self.speed_calculator.add_object()
-                    
-                    self.is_tracking = True
         
         # Update Tracking
         success_list, bboxes = self.tracker.update(frame)
