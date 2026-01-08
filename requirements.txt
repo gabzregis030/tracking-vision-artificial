@@ -5,6 +5,8 @@ matplotlib>=3.7.0
 
 # CLI and utilities
 argparse
+streamlit
+
 
 # Optional: Deep Learning (uncomment if needed)
 # torch>=2.0.0

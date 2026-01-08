@@ -235,12 +235,59 @@ class AppController:
             if key == ord('q'):
                 print("\nStopping tracking...")
                 break
-            elif key == ord('s'):
-                filename = f"screenshot_{self.frame_count}.png"
-                cv2.imwrite(filename, frame)
-                print(f"\nScreenshot saved: {filename}")
-        
         self.cleanup()
+
+    def process_frame(self) -> Tuple[Optional[np.ndarray], dict]:
+        """
+        Process a single frame for the video feed.
+        
+        Returns:
+            Tuple containing:
+            - Processed frame (RGB) or None if end/error
+            - Dictionary with metrics (fps, object_count, speeds)
+        """
+        if not self.tracking_initialized:
+            return None, {}
+            
+        success, frame = self.video_processor.read()
+        if not success:
+            return None, {}
+            
+        self.frame_count += 1
+        
+        # Update trackers
+        success_list, bboxes = self.tracker.update(frame)
+        
+        # Update Kalman & speed
+        object_speeds = {}
+        for i, (bbox, active) in enumerate(zip(bboxes, success_list)):
+            if not active:
+                continue
+            
+            x, y, w, h = bbox
+            center_x, center_y = x + w/2, y + h/2
+            
+            # Application of Kalman
+            if self.use_kalman and i < len(self.kalman_filters):
+                center_x, center_y = self.kalman_filters[i].update(center_x, center_y)
+                bboxes[i] = (int(center_x - w/2), int(center_y - h/2), w, h)
+                
+            # Speed
+            speed = self.speed_calculator.update(i, (center_x, center_y))
+            object_speeds[f"Object {i}"] = self.speed_calculator.get_smoothed_speed(i)
+
+        # Draw info (calculate pseudo-FPS or pass 0)
+        self._draw_tracking_info(frame, bboxes, success_list, fps=0.0)
+        
+        # Convert to RGB for Streamlit
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
+        metrics = {
+            "object_count": self.tracker.count_active(),
+            "speeds": object_speeds
+        }
+        
+        return frame_rgb, metrics
     
     def _draw_tracking_info(self, frame: np.ndarray, bboxes: List[Tuple[int, int, int, int]],
                            success_list: List[bool], fps: float):

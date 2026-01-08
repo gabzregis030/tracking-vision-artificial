@@ -4,11 +4,16 @@ Vision Tracking Project - Main Entry Point
 Track objects in video using various tracking algorithms.
 """
 
-import argparse
 import sys
+import argparse
 from pathlib import Path
 
-from controllers import AppController
+# Add project root to sys.path to allow importing from src (when running as script)
+project_root = str(Path(__file__).resolve().parent.parent)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from src.controllers import AppController
 
 
 def parse_arguments():
