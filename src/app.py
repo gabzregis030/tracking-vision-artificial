@@ -18,8 +18,8 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 st.set_page_config(
-    page_title="Sistema de Tracking de Vehículos",
-    page_icon="🚗",
+    page_title="Sistema de Tracking de Gatos",
+    page_icon="🐈",
     layout="wide"
 )
 
@@ -53,7 +53,7 @@ class SimpleVehicleTracker:
         self.frame_count = 0
         
         # Speed calculation
-        self.pixels_per_meter = 15.0  # Calibration factor
+        self.pixels_per_meter = 100.0  # Calibration factor for cats
         self.speed_history = {}
         
     def initialize(self):
@@ -97,7 +97,7 @@ class SimpleVehicleTracker:
         contours, _ = cv2.findContours(fg_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         detections = []
-        min_area = 800  # Minimum area for a vehicle
+        min_area = 500  # Minimum area for a cat
         
         for cnt in contours:
             area = cv2.contourArea(cnt)
@@ -239,14 +239,14 @@ class SimpleVehicleTracker:
         
         # Add info overlay
         active_count = len([o for o in self.tracked_objects.values() if o['frames_tracked'] >= 3])
-        info_text = f"Frame: {self.frame_count}/{self.total_frames} | Vehicles: {active_count}"
+        info_text = f"Frame: {self.frame_count}/{self.total_frames} | Cats: {active_count}"
         cv2.putText(frame, info_text, (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
         
         # Convert to RGB
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
         # Metrics
-        speeds = {f"Vehicle {i}": obj['speed'] 
+        speeds = {f"Cat {i}": obj['speed'] 
                   for i, (obj_id, obj) in enumerate(self.tracked_objects.items()) 
                   if obj['frames_tracked'] >= 3}
         
@@ -277,8 +277,8 @@ def save_uploaded_file(uploaded_file):
 
 
 def main():
-    st.title("🚗 Sistema de Tracking de Vehículos")
-    st.markdown("Sube un video para detectar y rastrear vehículos con su velocidad estimada")
+    st.title("🐈 Sistema de Tracking de Gatos")
+    st.markdown("Sube un video para detectar y rastrear gatos con su velocidad estimada")
     
     # Sidebar
     st.sidebar.title("⚙️ Configuración")
@@ -319,9 +319,9 @@ def main():
             if tracker.initialize():
                 st.session_state.tracker = tracker
                 st.session_state.is_running = True
-                st.success("✅ Video cargado. Iniciando tracking...")
+                st.success("Video cargado. Iniciando tracking...")
             else:
-                st.error("❌ Error al abrir el video")
+                st.error(" Error al abrir el video")
     
     if stop_btn:
         st.session_state.is_running = False
@@ -337,7 +337,7 @@ def main():
             frame, metrics = tracker.process_frame()
             
             if frame is None:
-                st.info("🎬 Video terminado")
+                st.info(" Video terminado")
                 st.session_state.is_running = False
                 break
             
@@ -346,7 +346,7 @@ def main():
             
             # Update stats in sidebar
             stats_frame.metric("Frame Actual", f"{metrics.get('frame', 0)}/{metrics.get('total_frames', 0)}")
-            stats_vehicles.metric("Vehículos Detectados", metrics.get('object_count', 0))
+            stats_vehicles.metric("Vehiculos Detectados", metrics.get('object_count', 0))
             
             # Progress bar
             if metrics.get('total_frames', 0) > 0:
@@ -365,7 +365,7 @@ def main():
             time.sleep(0.03)
     
     elif not uploaded_file:
-        st.info("👆 Sube un video en el panel izquierdo para comenzar")
+        st.info(" Sube un video en el panel izquierdo para comenzar")
 
 
 if __name__ == "__main__":

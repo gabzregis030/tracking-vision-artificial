@@ -107,7 +107,10 @@ def main():
     if args.detect:
         # Auto-detect objects
         print("\nAuto-detecting objects...")
-        if not controller.detect_and_track(args.detect_classes):
+        # Auto-detect objects
+        print("\nAuto-detecting objects...")
+        target_classes = args.detect_classes if args.detect_classes else ['cat']
+        if not controller.detect_and_track(target_classes):
             print("Failed to detect objects. Falling back to manual selection...")
             if not controller.select_objects(args.num_objects):
                 print("Failed to select objects")

@@ -13,9 +13,9 @@ class SpeedCalculator:
     Supports both pixel speed and real-world speed (if calibrated).
     """
     
-    # Default calibration for highway videos (estimated)
-    # Assumes a car is approximately 4.5m long and appears as ~90px in typical videos
-    DEFAULT_PIXELS_PER_METER = 20.0
+    # Default calibration for cat videos (estimated)
+    # Assumes a cat is approximately 0.5m long and appears as ~50-100px in typical videos
+    DEFAULT_PIXELS_PER_METER = 100.0
     
     def __init__(self, fps: int = 30, pixels_per_meter: Optional[float] = None,
                  smoothing_window: int = 10):
