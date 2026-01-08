@@ -13,18 +13,24 @@ class SpeedCalculator:
     Supports both pixel speed and real-world speed (if calibrated).
     """
     
+    # Default calibration for highway videos (estimated)
+    # Assumes a car is approximately 4.5m long and appears as ~90px in typical videos
+    DEFAULT_PIXELS_PER_METER = 20.0
+    
     def __init__(self, fps: int = 30, pixels_per_meter: Optional[float] = None,
-                 smoothing_window: int = 5):
+                 smoothing_window: int = 10):
         """
         Initialize speed calculator.
         
         Args:
             fps: Frames per second of video
             pixels_per_meter: Calibration factor for real-world measurements (pixels/meter)
+                             If None, uses default calibration for highway videos
             smoothing_window: Number of frames to use for smoothing speed calculations
         """
         self.fps = fps
-        self.pixels_per_meter = pixels_per_meter
+        # Use default calibration if not provided
+        self.pixels_per_meter = pixels_per_meter if pixels_per_meter is not None else self.DEFAULT_PIXELS_PER_METER
         self.smoothing_window = smoothing_window
         
         # History of positions for each tracked object
@@ -33,8 +39,8 @@ class SpeedCalculator:
     
     def add_object(self):
         """Add a new object to track."""
-        self.position_history.append(deque(maxlen=self.smoothing_window))
-        self.speed_history.append(deque(maxlen=self.smoothing_window))
+        self.position_history.append(deque(maxlen=self.smoothing_window * 2))
+        self.speed_history.append(deque(maxlen=self.smoothing_window * 2))
     
     def update(self, object_id: int, position: Tuple[float, float]) -> float:
         """
@@ -88,12 +94,25 @@ class SpeedCalculator:
             object_id: ID of the object
             
         Returns:
-            Smoothed speed
+            Smoothed speed in m/s
         """
         if object_id >= len(self.speed_history) or len(self.speed_history[object_id]) == 0:
             return 0.0
         
         return np.mean(list(self.speed_history[object_id]))
+    
+    def get_speed_kmh(self, object_id: int) -> float:
+        """
+        Get smoothed speed for an object in km/h.
+        
+        Args:
+            object_id: ID of the object
+            
+        Returns:
+            Smoothed speed in km/h
+        """
+        speed_ms = self.get_smoothed_speed(object_id)
+        return self.convert_to_kmh(speed_ms)
     
     def get_velocity(self, object_id: int) -> Tuple[float, float]:
         """
