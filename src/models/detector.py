@@ -14,17 +14,19 @@ class ObjectDetector:
     Primary support for YOLO, with fallback to classical methods.
     """
     
-    def __init__(self, method: str = "yolo", confidence_threshold: float = 0.25,
-                 nms_threshold: float = 0.3):
+    def __init__(self, method: str = "yolo", model_type: str = "tiny", 
+                 confidence_threshold: float = 0.25, nms_threshold: float = 0.3):
         """
         Initialize object detector.
         
         Args:
             method: Detection method ('yolo', 'hog', 'cascade')
+            model_type: YOLO model type ('tiny', 'standard')
             confidence_threshold: Minimum confidence for detections
             nms_threshold: Non-maximum suppression threshold
         """
         self.method = method.lower()
+        self.model_type = model_type.lower()
         self.confidence_threshold = confidence_threshold
         self.nms_threshold = nms_threshold
         
@@ -40,11 +42,17 @@ class ObjectDetector:
     
     def _load_yolo(self):
         """Load YOLO model weights and configuration."""
-        # Note: Users need to download YOLO weights separately
-        # This is a placeholder that checks for local weights
         base_path = os.path.dirname(os.path.abspath(__file__))
-        weights_path = os.path.join(base_path, "yolo", "yolov3-tiny.weights")
-        config_path = os.path.join(base_path, "yolo", "yolov3-tiny.cfg")
+        
+        if self.model_type == "standard":
+            weights_path = os.path.join(base_path, "yolo", "yolov3.weights")
+            config_path = os.path.join(base_path, "yolo", "yolov3.cfg")
+            print("Loading Standard YOLOv3 model...")
+        else:
+            weights_path = os.path.join(base_path, "yolo", "yolov3-tiny.weights")
+            config_path = os.path.join(base_path, "yolo", "yolov3-tiny.cfg")
+            print("Loading Tiny YOLOv3 model...")
+            
         names_path = os.path.join(base_path, "yolo", "coco.names")
         
         if os.path.exists(weights_path) and os.path.exists(config_path):
@@ -62,11 +70,12 @@ class ObjectDetector:
                     self.classes = [line.strip() for line in f.readlines()]
         else:
             print(f"Warning: YOLO weights not found at {weights_path}")
-            print("YOLO detection will not be available.")
+            print(f"Could not load {self.model_type} model.")
             print("Download weights from: https://pjreddie.com/darknet/yolo/")
     
     def detect_yolo(self, frame: np.ndarray, 
-                    target_classes: Optional[List[str]] = None) -> List[Tuple[int, int, int, int, str, float]]:
+                    target_classes: Optional[List[str]] = None,
+                    confidence_threshold: Optional[float] = None) -> List[Tuple[int, int, int, int, str, float]]:
         """
         Detect objects using YOLO.
         
@@ -100,7 +109,8 @@ class ObjectDetector:
                 class_id = np.argmax(scores)
                 confidence = scores[class_id]
                 
-                if confidence > self.confidence_threshold:
+                threshold = confidence_threshold if confidence_threshold is not None else self.confidence_threshold
+                if confidence > threshold:
                     # Filter by target classes if specified
                     class_name = self.classes[class_id] if class_id < len(self.classes) else "unknown"
                     if target_classes is not None and class_name not in target_classes:
@@ -121,7 +131,8 @@ class ObjectDetector:
                     class_ids.append(class_id)
         
         # Apply non-maximum suppression
-        indices = cv2.dnn.NMSBoxes(boxes, confidences, self.confidence_threshold, self.nms_threshold)
+        threshold = confidence_threshold if confidence_threshold is not None else self.confidence_threshold
+        indices = cv2.dnn.NMSBoxes(boxes, confidences, threshold, self.nms_threshold)
         
         detections = []
         if len(indices) > 0:
@@ -154,7 +165,8 @@ class ObjectDetector:
         return detections
     
     def detect(self, frame: np.ndarray, 
-               target_classes: Optional[List[str]] = None) -> List[Tuple[int, int, int, int, str, float]]:
+               target_classes: Optional[List[str]] = None,
+               confidence_threshold: Optional[float] = None) -> List[Tuple[int, int, int, int, str, float]]:
         """
         Detect objects using the configured method.
         
@@ -166,7 +178,7 @@ class ObjectDetector:
             List of detections as (x, y, w, h, class_name, confidence)
         """
         if self.method == "yolo":
-            return self.detect_yolo(frame, target_classes)
+            return self.detect_yolo(frame, target_classes, confidence_threshold)
         elif self.method == "hog":
             return self.detect_hog(frame)
         else:

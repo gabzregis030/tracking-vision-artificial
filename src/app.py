@@ -95,8 +95,9 @@ st.markdown("""
 class SmartTracker:
     """Smart tracker using YOLO detection and CSRT tracking."""
     
-    def __init__(self, video_path):
+    def __init__(self, video_path, model_type="tiny"):
         self.video_path = video_path
+        self.model_type = model_type  # Keep parameter for flexibility but default to tiny
         self.cap = None
         
         # Components
@@ -139,14 +140,17 @@ class SmartTracker:
             return False
         
         self.fps = self.cap.get(cv2.CAP_PROP_FPS) or 30
-        self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        
         # Initialize YOLO Detector
-        # We try to use the tiny model we configured
         try:
-            # Lower confidence to 0.15 and increase NMS to 0.5 to allow overlapping cats
-            self.detector = ObjectDetector(method="yolo", confidence_threshold=0.15, nms_threshold=0.5)
-            print("YOLO Detector initialized with high sensitivity")
+            # Load detection model
+            self.detector = ObjectDetector(
+                method="yolo", 
+                model_type=self.model_type,
+                # Use 0.40 for Standard (reduce noise) and 0.15 for Tiny (catch everything)
+                confidence_threshold=0.40 if self.model_type == "standard" else 0.15,
+                nms_threshold=0.3 # Lower threshold = Aggressively remove overlapping boxes
+            )
+            print(f"YOLO Detector initialized ({self.model_type})")
         except Exception as e:
             st.error(f"Error cargando detector: {e}")
             return False
@@ -176,7 +180,13 @@ class SmartTracker:
         # Detection logic
         # Run periodically (every 10 frames) OR if zero cats tracked
         if self.frame_count % 10 == 0 or active_count == 0:
+            # First pass: Normal sensitivity
             detections = self.detector.detect(frame, target_classes=["cat"])
+            
+            # Adaptive Sensitivity: If no cats found and we are trusting Tiny YOLO, try harder!
+            if len(detections) == 0 and active_count == 0:
+                print("No detections, trying high sensitivity mode...")
+                detections = self.detector.detect(frame, target_classes=["cat"], confidence_threshold=0.05)
             
             if len(detections) > 0:
                 print(f"Detectados {len(detections)} gatos en frame {self.frame_count}")
@@ -280,7 +290,18 @@ def main():
         type=['mp4', 'avi', 'mov', 'mpeg4'],
         help="Formatos soportados: MP4, AVI, MOV"
     )
+
+    st.sidebar.markdown("### Configuración de Detección")
     
+    # Simple toggle for "Hard Mode"
+    use_enhance = st.sidebar.checkbox(
+        "Modo Alta Precisión", 
+        value=False,
+        help="Actívalo si no detecta gatos (ej. cuando hay personas o poca luz). Usa un modelo más potente pero más lento."
+    )
+    
+    model_type = "standard" if use_enhance else "tiny"
+
     st.sidebar.markdown("---")
     st.sidebar.markdown("### Métricas en tiempo real")
     
@@ -308,7 +329,7 @@ def main():
         video_path = save_uploaded_file(uploaded_file)
         if video_path:
             # Use our new SmartTracker
-            tracker = SmartTracker(video_path)
+            tracker = SmartTracker(video_path, model_type)
             if tracker.initialize():
                 st.session_state.tracker = tracker
                 st.session_state.is_running = True
