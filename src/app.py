@@ -101,7 +101,7 @@ class SmartTracker:
         # Detection logic
         # Run detection periodically or if we aren't tracking anything
         if self.frame_count % 30 == 0 or not self.is_tracking:
-            detections = self.detector.detect(frame, classes=["cat"])
+            detections = self.detector.detect(frame, target_classes=["cat"])
             
             # If we found objects and aren't tracking, or found MORE objects
             if len(detections) > 0:
